@@ -4,7 +4,7 @@ from __future__ import division, print_function
 ## @addtogroup technical
 # @{
 
-## @defgroup techCorrel techCorrel
+## @defgroup Correl Correl
 # @{
 # @brief The class used for real-time correlation.
 # @author Victor Couty
@@ -450,12 +450,12 @@ with a border of 5% the dimension")
 
 # =======================================================================#
 # =                                                                     =#
-# =                         Class TechCorrel:                           =#
+# =                           Class Correl:                             =#
 # =                                                                     =#
 # =======================================================================#
 
 
-class TechCorrel:
+class Correl:
   """
   Identify the displacement between two images
 
@@ -480,7 +480,7 @@ class TechCorrel:
     faster operation.
 
   # Usage #
-    At initialization, TechCorrel needs only one unammed argument:
+    At initialization, Correl needs only one unammed argument:
       the working resolution (as a tuple of ints), which is the resolution
       of the images it will be given.
       All the images must have exactly these dimensions.
