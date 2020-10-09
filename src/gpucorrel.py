@@ -10,7 +10,7 @@ import pycuda.gpuarray as gpuarray
 from pycuda.reduction import ReductionKernel
 import cv2
 
-from .fields import get_field
+from fields import get_field
 
 context = None
 
