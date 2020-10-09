@@ -111,8 +111,7 @@ class CorrelStage:
     kernelFile = kwargs.get("kernel_file")
     if kernelFile is None:
       self.debug(2, "Kernel file not specified")
-      from crappy import __path__ as crappyPath
-      kernelFile = crappyPath[0] + "/data/kernels.cu"
+      kernelFile = "kernels.cu"
     # Reading kernels and compiling module #
     with open(kernelFile, "r") as f:
       self.debug(3, "Sourcing module")
@@ -639,9 +638,7 @@ class GPUCorrel:
           lighter means positive and darker negative.
 
       kernel_file: <b>string, path,
-       default=crappy_install_dir/data/kernels.cu</b>\n
-        Where crappy_install_dir is the root directory
-        of the installation of crappy (crappy.__path__)
+       default=kernels.cu</b>\n
 
       mul: <b>float, > 0, default=3</b>\n
         This parameter is critical.\n
@@ -724,9 +721,7 @@ Add Nfields=x or directly set fields with fields=list/tuple")
 
     kernelFile = kwargs.get("kernel_file")
     if kernelFile is None:
-      self.debug(3, "Kernel file not specified, using the one in crappy dir")
-      from crappy import __path__ as crappyPath
-      kernelFile = crappyPath[0] + "/data/kernels.cu"
+      kernelFile = "kernels.cu"
     self.debug(3, "Kernel file:", kernelFile)
 
     # Creating a new instance of CorrelStage for each stage #
