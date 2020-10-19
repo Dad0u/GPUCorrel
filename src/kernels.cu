@@ -22,8 +22,8 @@ texture<float, cudaTextureType2D, cudaReadModeElementType> texMask;
 // Note: the outputs are not normalized
 __global__ void gradient(float* gradX, float* gradY)
 {
-  uint x = blockIdx.x*blockDim.x+threadIdx.x;
-  uint y = blockIdx.y*blockDim.y+threadIdx.y;
+  const uint x = blockIdx.x*blockDim.x+threadIdx.x;
+  const uint y = blockIdx.y*blockDim.y+threadIdx.y;
   if(x < WIDTH && y < HEIGHT)
   {
     gradX[x+WIDTH*y] = (
@@ -42,30 +42,30 @@ __global__ void gradient(float* gradX, float* gradY)
 }
 
 // Kernel to resample the original image using bilinear interpolation
-__global__ void resampleO(float* out, int w, int h)
+__global__ void resampleO(float* out, const int w, const int h)
 {
-  int idx = threadIdx.x+blockIdx.x*blockDim.x;
-  int idy = threadIdx.y+blockIdx.y*blockDim.y;
+  const int idx = threadIdx.x+blockIdx.x*blockDim.x;
+  const int idy = threadIdx.y+blockIdx.y*blockDim.y;
   if(idx < w && idy < h)
     out[idx+w*idy] = tex2D(tex,(float)idx/w,(float)idy/h);
 }
 
 // To resample the second image...
-__global__ void resample(float* out, int w, int h)
+__global__ void resample(float* out, const int w, const int h)
 {
-  int idx = threadIdx.x+blockIdx.x*blockDim.x;
-  int idy = threadIdx.y+blockIdx.y*blockDim.y;
+  const int idx = threadIdx.x+blockIdx.x*blockDim.x;
+  const int idy = threadIdx.y+blockIdx.y*blockDim.y;
   if(idx < w && idy < h)
     out[idx+w*idy] = tex2D(tex_d,(float)idx/w,(float)idy/h);
 }
 
 // This kernel computes the tables that will be used by the correlation
 // routine to evaluate the research direction (called G, 1 per parameter)
-__global__ void makeG(float* G, float* gradX, float* gradY,
-                      float* fieldX, float* fieldY)
+__global__ void makeG(float* G, const float* gradX, const float* gradY,
+                      const float* fieldX, const float* fieldY)
 {
-  int idx = threadIdx.x+blockIdx.x*blockDim.x;
-  int idy = threadIdx.y+blockIdx.y*blockDim.y;
+  const int idx = threadIdx.x+blockIdx.x*blockDim.x;
+  const int idy = threadIdx.y+blockIdx.y*blockDim.y;
   if(idx < WIDTH && idy < HEIGHT)
   {
     int id = idx+WIDTH*idy;
@@ -75,14 +75,14 @@ __global__ void makeG(float* G, float* gradX, float* gradY,
 
 // The kernel that will write the residual image (the difference between the
 // original image and the second image after deformation)
-__global__ void makeDiff(float *out, float *param,
-                         float *fieldsX, float *fieldsY)
+__global__ void makeDiff(float *out, const float *param,
+                         const float *fieldsX, const float *fieldsY)
 {
-  int idx = threadIdx.x+blockIdx.x*blockDim.x;
-  int idy = threadIdx.y+blockIdx.y*blockDim.y;
+  const int idx = threadIdx.x+blockIdx.x*blockDim.x;
+  const int idy = threadIdx.y+blockIdx.y*blockDim.y;
   if(idx < WIDTH && idy < HEIGHT)
   {
-    int id = idx+WIDTH*idy;
+    const int id = idx+WIDTH*idy;
     float ox = .5f;
     float oy = .5f;
     // First, let's compute the offset we have by adding all the fields
@@ -103,7 +103,7 @@ __global__ void makeDiff(float *out, float *param,
 
 // Simple matrix-vector dot product (to multiply the inverted Hessian with
 // the research direction)
-__global__ void myDot(float *M, float *v)
+__global__ void myDot(const float *M, float *v)
 {
   uint id = threadIdx.x;
   __shared__ float sh_v[PARAMETERS];
@@ -118,7 +118,7 @@ __global__ void myDot(float *M, float *v)
 }
 
 // Do I really need to explain this one ?
-__global__ void kadd(float* v, float k, float* v2)
+__global__ void kadd(float* v, const float k, const float* v2)
 {
   v[threadIdx.x] += k*v2[threadIdx.x];
 }
