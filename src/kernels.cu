@@ -18,7 +18,7 @@ texture<float, cudaTextureType2D, cudaReadModeElementType> tex_d;
 // The mask, to limit the effect of the borders
 texture<float, cudaTextureType2D, cudaReadModeElementType> texMask;
 
-// This kernel computes the gradients of the original image with a Sobel filter
+// This kernel computes the gradients of the reference image with a Sobel filter
 // Note: the outputs are not normalized
 __global__ void gradient(float* gradX, float* gradY)
 {
@@ -41,8 +41,8 @@ __global__ void gradient(float* gradX, float* gradY)
   }
 }
 
-// Kernel to resample the original image using bilinear interpolation
-__global__ void resampleO(float* out, const int w, const int h)
+// Kernel to resample the reference image using bilinear interpolation
+__global__ void resampleR(float* out, const int w, const int h)
 {
   const int idx = threadIdx.x+blockIdx.x*blockDim.x;
   const int idy = threadIdx.y+blockIdx.y*blockDim.y;
@@ -74,7 +74,7 @@ __global__ void makeG(float* G, const float* gradX, const float* gradY,
 }
 
 // The kernel that will write the residual image (the difference between the
-// original image and the second image after deformation)
+// reference image and the second image after deformation)
 __global__ void makeDiff(float *out, const float *param,
                          const float *fieldsX, const float *fieldsY)
 {
@@ -91,7 +91,7 @@ __global__ void makeDiff(float *out, const float *param,
       ox += param[i]*fieldsX[WIDTH*HEIGHT*i+id];
       oy += param[i]*fieldsY[WIDTH*HEIGHT*i+id];
     }
-    // The residual in idx,idy is the value of the original image
+    // The residual in idx,idy is the value of the reference image
     // minus the value of the second image at the new coordinates
     // We multiply this difference by the mask
     out[id] = (

@@ -74,8 +74,8 @@ class Correl_level:
     self.devX = gpuarray.empty((self.fields_count), np.float32)
     # to store the research direction
     self.devVec = gpuarray.empty((self.fields_count), np.float32)
-    # To store the original image on the device
-    self.devOrig = gpuarray.empty(img_size, np.float32)
+    # To store the reference image on the device
+    self.devRef = gpuarray.empty(img_size, np.float32)
     # To store the gradient along X of the original image on the device
     self.devGradX = gpuarray.empty(img_size, np.float32)
     # And along Y
@@ -92,7 +92,7 @@ class Correl_level:
       self.mod = SourceModule(f.read() % (self.w, self.h, self.fields_count))
     # Assigning functions to the kernels #
     # These kernels are defined in data/kernels.cu
-    self._resampleOrigKrnl = self.mod.get_function('resampleO')
+    self._resampleRefKrnl = self.mod.get_function('resampleR')
     self._resampleKrnl = self.mod.get_function('resample')
     self._gradientKrnl = self.mod.get_function('gradient')
     self._makeGKrnl = self.mod.get_function('makeG')
@@ -122,7 +122,7 @@ class Correl_level:
       t.set_address_mode(1, cuda.address_mode.BORDER)
 
     # Preparing kernels for less overhead when called #
-    self._resampleOrigKrnl.prepare("Pii", texrefs=[self.tex])
+    self._resampleRefKrnl.prepare("Pii", texrefs=[self.tex])
     self._resampleKrnl.prepare("Pii", texrefs=[self.tex_d])
     self._gradientKrnl.prepare("PP", texrefs=[self.tex])
     self._makeDiff.prepare("PPPP",texrefs=[self.tex, self.tex_d, self.texMask])
@@ -159,17 +159,17 @@ class Correl_level:
 
     If it is a GPU array, it will NOT be copied.
     Note that the most efficient method is to write directly over
-    self.devOrig with some kernel and then run self.update_ref()
+    self.devRef with some kernel and then run self.update_ref()
     """
     assert img.shape == (self.h, self.w), \
       "Got a {} image in a {} correlation routine!".format(
         img.shape, (self.h, self.w))
     if isinstance(img, np.ndarray):
       self.debug(3, "Setting original image from ndarray")
-      self.devOrig.set(img)
+      self.devRef.set(img)
     elif isinstance(img, gpuarray.GPUArray):
       self.debug(3, "Setting original image from GPUArray")
-      self.devOrig = img
+      self.devRef = img
     else:
       self.debug(0, "Error ! Unknown type of data given to set_ref()")
       raise ValueError
@@ -178,7 +178,7 @@ class Correl_level:
   def update_ref(self):
     """Needs to be called after self.img_d has been written directly"""
     self.debug(3, "Updating original image")
-    self.array = cuda.gpuarray_to_array(self.devOrig, 'C')
+    self.array = cuda.gpuarray_to_array(self.devRef, 'C')
     # 'C' order implies tex2D(x,y) will fetch matrix(y,x):
     # this is where x and y are inverted to comlpy with the kernels order
     self.tex.set_array(self.array)
@@ -236,7 +236,7 @@ with a border of 5% the dimension")
     if self.verbose >= 3:
       self.debug(3, "Inverted Hessian:\n", self.devHi.get())
 
-  def resampleOrig(self, newY, newX, devOut):
+  def resample_ref(self, newY, newX, devOut):
     """
     To resample the original image
 
@@ -245,8 +245,8 @@ with a border of 5% the dimension")
     """
     grid = (int(ceil(newX / 32)), int(ceil(newY / 32)))
     block = (int(ceil(newX / grid[0])), int(ceil(newY / grid[1])), 1)
-    self.debug(3, "Resampling Orig texture, grid:", grid, "block:", block)
-    self._resampleOrigKrnl.prepared_call(self.grid, self.block,
+    self.debug(3, "Resampling ref texture, grid:", grid, "block:", block)
+    self._resampleRefKrnl.prepared_call(self.grid, self.block,
                                          devOut.gpudata,
                                          np.int32(newX), np.int32(newY))
     self.debug(3, "Resampled original texture to", devOut.shape)

@@ -398,8 +398,8 @@ to allow GPU computing (got {}). Converting to float32."
 
     self.correl[0].set_ref(img)
     for i in range(1, self.levels):
-      self.correl[i - 1].resampleOrig(self.h[i], self.w[i],
-                                      self.correl[i].devOrig)
+      self.correl[i - 1].resample_ref(self.h[i], self.w[i],
+                                      self.correl[i].devRef)
       self.correl[i].update_ref()
 
   def set_fields(self, fields):
@@ -439,7 +439,7 @@ See docstring of Correl")
     import cv2
     self.debug(1, "Saving all images with the name", name + "X.png")
     for i in range(self.levels):
-      out = self.correl[i].devOrig.get().astype(np.uint8)
+      out = self.correl[i].devRef.get().astype(np.uint8)
       cv2.imwrite(name + str(i) + ".png", out)
 
   def set_image(self, img_d):
