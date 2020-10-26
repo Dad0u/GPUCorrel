@@ -35,7 +35,7 @@ correl = GPUCorrel((height,width),fields=['x','y','r'])
 for i in range(5):
   r,f = cam.read()
 # We set the last one as the reference image
-correl.setOrig(convert(f))
+correl.set_ref(convert(f))
 
 
 def read_image():
@@ -50,7 +50,7 @@ try:
     # Reading a new image
     f = read_image()
     # Compute and print the displacement
-    print("x= {:.2f}\ny= {:.2f}\nr= {:.2f}".format(*correl.getDisp(f)))
+    print("x= {:.2f}\ny= {:.2f}\nr= {:.2f}".format(*correl.compute(f)))
     t0 = t1
     t1 = time()
     print("{:.3f}ms/loop ({:.2f} fps)\n".format(1000*(t1-t0),1/(t1-t0)))
