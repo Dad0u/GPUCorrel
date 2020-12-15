@@ -4,14 +4,21 @@
 import warnings
 from math import ceil
 import numpy as np
+import os
 import pycuda.driver as cuda
 from pycuda.compiler import SourceModule
 import pycuda.gpuarray as gpuarray
 
-from fields import get_field
-from gpucorrel_level import Correl_level
+from .fields import get_field
+from .gpucorrel_level import Correl_level
 
 context = None
+
+kernel_path = [
+    'kernels.cu',
+    'kernels/kernels.cu',
+    'gpucorrel/kernels/kernels.cu',
+    'src/gpucorrel/kernels/kernels.cu']
 
 
 def interpNearest(ary, ny, nx):
@@ -26,6 +33,19 @@ def interpNearest(ary, ny, nx):
     for i in range(nx):
       out[j, i] = ary[int(ry * j + .5), int(rx * i + .5)]
   return out
+
+
+def find_kernel_file():
+  try:
+    from gpucorrel import __path__ as gpath
+    l = [os.path.join(p,'../kernels/kernels.cu') for p in gpath]+kernel_path
+  except ImportError:
+    l = kernel_path
+  for p in l:
+    if os.path.exists(p):
+      return p
+  raise RuntimeError("Could not locate kernels.cu file,\
+please use kernel_file keyword or place kernels.cu next to your Python file")
 
 
 class GPUCorrel:
@@ -214,8 +234,9 @@ class GPUCorrel:
           128 Gray means no difference,
           lighter means positive and darker negative.
 
-      kernel_file: <b>string, path,
-       default=kernels.cu</b>\n
+      kernel_file: <b>string, path, default=None</b>\n
+        Path of the kernel file to use
+        If None, will try several likely locations
 
       mul: <b>float, > 0, default=3</b>\n
         This parameter is critical.\n
@@ -291,7 +312,7 @@ Add fields_count=x or directly set fields with fields=list/tuple")
 
     kernel_file = kwargs.get("kernel_file")
     if kernel_file is None:
-      kernel_file = "kernels.cu"
+      kernel_file = find_kernel_file()
     self.debug(3, "Kernel file:", kernel_file)
 
     # Creating a new instance of Correl_level for each stage #
