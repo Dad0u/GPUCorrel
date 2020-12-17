@@ -374,7 +374,7 @@ __global__ void resample{0}(float* outX, float* outY, const int x, const int y)
       self.set_mask(kwargs.get("mask"))
 
   def get_fields(self, y=None, x=None):
-    """Returns the fields, reampled to size (y,x)"""
+    """Returns the fields, resampled to size (y,x)"""
     if x is None or y is None:
       y = self.h[0]
       x = self.w[0]
