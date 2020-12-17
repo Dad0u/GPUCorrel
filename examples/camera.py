@@ -2,6 +2,40 @@ from gpucorrel import GPUCorrel
 import cv2
 import numpy as np
 from time import time
+try:
+  import matplotlib.pyplot as plt
+except ImportError:
+  plt = None
+
+
+class Plotter:
+  def __init__(self,*labels):
+    print("labels",labels)
+    self.labels = labels
+    self.fig = plt.figure()
+    self.ax = self.fig.add_subplot(111)
+    self.lines = []
+    for _ in self.labels:
+      self.lines.append(self.ax.plot([], [])[0])
+    plt.legend(labels, bbox_to_anchor=(-0.03, 1.02, 1.06, .102), loc=3,
+               ncol=len(labels), mode="expand", borderaxespad=1)
+    plt.xlabel('time (s)')
+    plt.grid()
+    self.t0 = time()
+    plt.draw()
+    plt.pause(.001)
+
+  def plot(self,*args):
+    assert len(args) == len(self.labels),"Got an invalid number of args"
+    t = time()-self.t0
+    for l,y in zip(self.lines,args):
+      l.set_xdata(np.append(l.get_xdata(),t))
+      l.set_ydata(np.append(l.get_ydata(),y))
+    self.ax.relim() # Update the window
+    self.ax.autoscale_view(True, True, True)
+    self.fig.canvas.draw() # Update the graph
+    self.fig.canvas.flush_events()
+
 
 # Opening the first camera with openCV
 cam = cv2.VideoCapture(0)
@@ -29,7 +63,12 @@ else:
 # We will be computing only rigid body motions
 # x and y are the displacement along each direction,
 # r is the rotation (linearized so only for small angles)
-correl = GPUCorrel((height,width),fields=['x','y','r'])
+fields= ('x','y','r')
+correl = GPUCorrel((height,width),fields=list(fields))
+
+# Create class to plot data in real time
+if plt is not None:
+  p = Plotter(*fields)
 
 # We read a few images to let the auto exposure ajust the brightness
 for i in range(5):
@@ -50,7 +89,10 @@ try:
     # Reading a new image
     f = read_image()
     # Compute and print the displacement
-    print("x= {:.2f}\ny= {:.2f}\nr= {:.2f}".format(*correl.compute(f)))
+    x,y,r = correl.compute(f)
+    print("x= {:.2f}\ny= {:.2f}\nr= {:.2f}".format(x,y,r))
+    if plt is not None:
+      p.plot(x,y,r)
     t0 = t1
     t1 = time()
     print("{:.3f}ms/loop ({:.2f} fps)\n".format(1000*(t1-t0),1/(t1-t0)))
