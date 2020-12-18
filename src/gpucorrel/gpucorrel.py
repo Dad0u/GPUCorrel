@@ -133,6 +133,9 @@ class GPUCorrel:
         each array corresponds to the displacement in pixel along
         respectively X and Y
 
+      Alternatively, fields can be given as (y,x,2) ndarrays where
+      a[:,:,0] holds the displacement along X and a[:,:,1] along Y
+
     You can also use a string instead of the tuple for the common fields:
 
       Rigid body and linear deformations:
@@ -439,10 +442,18 @@ See docstring of Correl")
     # (to be interpolated quickly for each stage)
     self.fieldsXArray = []
     self.fieldsYArray = []
-    for i in range(self.fields_count):
-      if isinstance(fields[i], str):
-        fields[i] = get_field(fields[i].lower(),
-            self.h[0],self.w[0])
+    for i,f in enumerate(fields):
+      if isinstance(f, tuple): # If tuple, check the shape
+        assert len(f) == 2,"fields n°{} is invalid".format(i+1)
+        assert f[0].shape == f[1].shape == (self.h[0],self.w[0]),\
+        "fields n°{} is invalid".format(i+1)
+      elif isinstance(f, str): # If string, convert to tuple
+        fields[i] = get_field(f.lower(), self.h[0],self.w[0])
+      # If (y,x,2) ndarray, check shape and convert to tuple
+      elif isinstance(f, np.ndarray):
+        assert fields[i].shape == (self.h[0],self.w[0],2),\
+            "fields n°{} is invalid".format(i+1)
+        fields[i] = (f[:,:,0],f[:,:,1])
 
       self.fieldsXArray.append(toArray(fields[i][0], "C"))
       self.texFx[i].set_array(self.fieldsXArray[i])
