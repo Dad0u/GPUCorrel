@@ -23,22 +23,27 @@ The class you want to use is GPUCorrel from src/gpudcorrel.py
 The files fields.py and kernels.cu must be in the same directory.
 
 ```python
+# Import the class from the module:
+from gpucorrel import GPUCorrel
+
 # Instanciate the class.
 # Here, it will work on 640x480 images
 # and identify rigid body motions
 correl = GPUCorrel((480,640),fields=['x','y','r'])
 
 # Set the reference image
-correl.setOrig(reference_image)
+# reference_image must be a 2D Numpy array of the correct shape
+# dtype should be float32. If not, the array will be casted into float32
+correl.set_ref(reference_image)
 
 # Will prepare the class given the fields and
 # the reference image. It may take a few seconds
 # This line can be omitted as it will be called automatically if
-# necessary when calling the fist .getDisp()
+# necessary when calling the fist .compute()
 correl.prepare()
 
 # And let's compute the displacement !
-x,y,r = correl.getDisp(moving_image)
+x,y,r = correl.compute(moving_image)
 
 # x,y and r are floats. By default x and y are in pixel and r in degree
 ```
@@ -63,9 +68,11 @@ For example, f[a,b,0] should hold the displacement along x of the pixel at the l
 Please note that the algorithm is meant to perform on linearly independant fields.
 
 ```python
+# This example shows how to create a simple example field
 y,x = 480,640
 lx = np.linspace(-1,1,x)
 ly = np.linspace(-1,1,y)
+# A field to identify Z-axis rigid body motion (equivalent to exx+eyy)
 xv,yv = np.meshgrid(lx,ly)
 
 my_field = np.empty((y,x,2),dtype=np.float32)
