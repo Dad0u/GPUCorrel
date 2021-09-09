@@ -255,6 +255,10 @@ class GPUCorrel:
         acceptable value. Don't hesitate to adapt it to your case.
         Use verbose=3 and see if the convergence is too slow or too fast.
 
+      use_last: <b> bool, default=True</b>\n
+        If True, the last computed field will be used to initialize the field
+        on the next call to .compute(). Else, it will be 0 everywhere
+
 
   \todo
     This section lists all the considered improvements for this program.
@@ -275,7 +279,7 @@ class GPUCorrel:
     for k in kwargs.keys():
       if k not in ['verbose', 'levels', 'resampling_factor', 'kernel_file',
                    'iterations', 'show_diff', 'fields_count', 'img',
-                   'fields', 'mask', 'mul']:
+                   'fields', 'mask', 'mul', 'use_last']:
         unknown.append(k)
     if len(unknown) != 0:
       warnings.warn("Unrecognized parameter" + (
@@ -375,6 +379,8 @@ __global__ void resample{0}(float* outX, float* outY, const int x, const int y)
 
     if kwargs.get("mask") is not None:
       self.set_mask(kwargs.get("mask"))
+
+    self.use_last = kwargs.get('use_last', True)
 
   def get_fields(self, y=None, x=None):
     """Returns the fields, resampled to size (y,x)"""
@@ -501,8 +507,9 @@ See docstring of Correl")
     if img_d is not None:
       self.set_image(img_d)
     try:
+      assert self.use_last
       disp = self.last / (self.resamplingFactor ** self.levels)
-    except AttributeError:
+    except (AttributeError, AssertionError):
       disp = np.array([0] * self.fields_count, dtype=np.float32)
     for i in reversed(range(self.levels)):
       disp *= self.resamplingFactor
@@ -510,7 +517,7 @@ See docstring of Correl")
       disp = self.correl[i].compute()
       self.last = disp
     # Every 10 images, print the values (if debug >=2)
-    if self.loop % 10 == 0:
+    if self.loop % 10 == 0 and self.verbose >= 2:
       self.debug(2, "Loop", self.loop, ", values:", self.correl[0].devX.get(),
                  ", res:", self.correl[0].res / 1e6)
     return disp
