@@ -101,11 +101,13 @@ class Correl_level:
     self._addKrnl = self.mod.get_function('kadd')
     # These ones use pyCuda reduction module to generate efficient kernels
     self._mulRedKrnl = ReductionKernel(np.float32, neutral="0",
-                                     reduce_expr="a+b", map_expr="x[i]*y[i]",
-                                     arguments="float *x, float *y")
+                                       reduce_expr="a+b",
+                                       map_expr="x[i]*y[i]",
+                                       arguments="float *x, float *y")
     self._leastSquare = ReductionKernel(np.float32, neutral="0",
-                                     reduce_expr="a+b", map_expr="x[i]*x[i]",
-                                     arguments="float *x")
+                                        reduce_expr="a+b",
+                                        map_expr="x[i]*x[i]",
+                                        arguments="float *x")
     # We could have used use mulRedKrnl(x,x), but this is probably faster ?
 
     # Getting texture references #
@@ -125,7 +127,8 @@ class Correl_level:
     self._resampleRefKrnl.prepare("Pii", texrefs=[self.tex])
     self._resampleKrnl.prepare("Pii", texrefs=[self.tex_d])
     self._gradientKrnl.prepare("PP", texrefs=[self.tex])
-    self._makeDiff.prepare("PPPP",texrefs=[self.tex, self.tex_d, self.texMask])
+    self._makeDiff.prepare("PPPP",
+                           texrefs=[self.tex, self.tex_d, self.texMask])
     self._addKrnl.prepare("PfP")
     # Reading original image if provided #
     if kwargs.get("img") is not None:
@@ -162,7 +165,7 @@ class Correl_level:
     self.devRef with some kernel and then run self.update_ref()
     """
     assert img.shape == (self.h, self.w), \
-      "Got a {} image in a {} correlation routine!".format(
+           "Got a {} image in a {} correlation routine!".format(
         img.shape, (self.h, self.w))
     if isinstance(img, np.ndarray):
       self.debug(3, "Setting original image from ndarray")
@@ -188,7 +191,8 @@ class Correl_level:
   def _computeGradients(self):
     """Wrapper to call the gradient kernel"""
     self._gradientKrnl.prepared_call(self.grid, self.block,
-                                 self.devGradX.gpudata, self.devGradY.gpudata)
+                                     self.devGradX.gpudata,
+                                     self.devGradY.gpudata)
 
   def prepare(self):
     """
@@ -230,7 +234,7 @@ with a border of 5% the dimension")
         self.H[i, j] = self._mulRedKrnl(self.devG[i], self.devG[j]).get()
         if i != j:
           self.H[j, i] = self.H[i, j]
-    self.debug(3,"Hessian:\n", self.H)
+    self.debug(3, "Hessian:\n", self.H)
     self.devHi.set(np.linalg.inv(self.H))  # *1e-3)
     # Looks stupid but prevents a useless devHi copy if nothing is printed
     if self.verbose >= 3:
@@ -247,8 +251,8 @@ with a border of 5% the dimension")
     block = (int(ceil(newX / grid[0])), int(ceil(newY / grid[1])), 1)
     self.debug(3, "Resampling ref texture, grid:", grid, "block:", block)
     self._resampleRefKrnl.prepared_call(self.grid, self.block,
-                                         devOut.gpudata,
-                                         np.int32(newX), np.int32(newY))
+                                        devOut.gpudata,
+                                        np.int32(newX), np.int32(newY))
     self.debug(3, "Resampled original texture to", devOut.shape)
 
   def resampleD(self, newY, newX):
@@ -292,7 +296,7 @@ with a border of 5% the dimension")
     This will automatically call this method first
     """
     assert img_d.shape == (self.h, self.w), \
-      "Got a {} image in a {} correlation routine!".format(
+           "Got a {} image in a {} correlation routine!".format(
         img_d.shape, (self.h, self.w))
     if isinstance(img_d, np.ndarray):
       self.debug(3, "Creating texture from numpy array")
@@ -309,7 +313,8 @@ with a border of 5% the dimension")
   def set_mask(self, mask):
     self.debug(3, "Setting the mask")
     assert mask.shape == (self.h, self.w), \
-      "Got a {} mask in a {} routine.".format(mask.shape, (self.h, self.w))
+           "Got a {} mask in a {} routine.".format(
+           mask.shape, (self.h, self.w))
     if not mask.dtype == np.float32:
       self.debug(2, "Converting the mask to float32")
       mask = mask.astype(np.float32)
@@ -324,17 +329,17 @@ with a border of 5% the dimension")
 
   def setDisp(self, X):
     assert X.shape == (self.fields_count,), \
-      "Incorrect initialization of the parameters"
+           "Incorrect initialization of the parameters"
     if isinstance(X, gpuarray.GPUArray):
       self.devX = X
     elif isinstance(X, np.ndarray):
       self.devX.set(X)
     else:
       self.debug(0,
-          "Error! Unknown type of data given to Correl_level.setDisp")
+                 "Error! Unknown type of data given to Correl_level.setDisp")
       raise ValueError
 
-  def save_diff(self,fname=None):
+  def save_diff(self, fname=None):
     self._makeDiff.prepared_call(self.grid, self.block,
                                  self.devOut.gpudata,
                                  self.devX.gpudata,
@@ -356,8 +361,8 @@ with a border of 5% the dimension")
     if img_d is not None:
       self.set_image(img_d)
     assert hasattr(self, 'array_d'), \
-      "Did not set the image, use set_image() before calling compute \
-  or give the image as parameter."
+           "Did not set the image, use set_image() before calling compute " \
+           "or give the image as parameter."
     self.debug(3, "Computing first diff table")
     self._makeDiff.prepared_call(self.grid, self.block,
                                  self.devOut.gpudata,

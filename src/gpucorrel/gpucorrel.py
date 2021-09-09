@@ -38,7 +38,7 @@ def interpNearest(ary, ny, nx):
 def find_kernel_file():
   try:
     from gpucorrel import __path__ as gpath
-    l = [os.path.join(p,'../kernels/kernels.cu') for p in gpath]+kernel_path
+    l = [os.path.join(p, '../kernels/kernels.cu') for p in gpath] + kernel_path
   except ImportError:
     l = kernel_path
   for p in l:
@@ -283,8 +283,8 @@ class GPUCorrel:
         unknown.append(k)
     if len(unknown) != 0:
       warnings.warn("Unrecognized parameter" + (
-        's: ' + str(unknown) if len(unknown) > 1 else ': ' + unknown[0]),
-        SyntaxWarning)
+                    's: ' + str(unknown) if len(unknown) > 1 else ': '
+                    + unknown[0]), SyntaxWarning)
     self.verbose = kwargs.get("verbose", 0)
     self.debug(3, "You set the verbose level to the maximum.\n\
 It may help finding bugs or tracking errors but it may also \
@@ -326,13 +326,13 @@ Add fields_count=x or directly set fields with fields=list/tuple")
     self.correl = []
     for i in range(self.levels):
       self.correl.append(Correl_level((self.h[i], self.w[i]),
-                                     verbose=self.verbose,
-                                     fields_count=self.fields_count,
-                                     iterations=self.nb_iter,
-                                     show_diff=(i == 0 and kwargs.get(
-                                         "show_diff", False)),
-                                     mul=kwargs.get("mul", 3),
-                                     kernel_file=kernel_file))
+                                      verbose=self.verbose,
+                                      fields_count=self.fields_count,
+                                      iterations=self.nb_iter,
+                                      show_diff=(i == 0 and kwargs.get(
+                                          "show_diff", False)),
+                                      mul=kwargs.get("mul", 3),
+                                      kernel_file=kernel_file))
 
     # Set original image if provided #
     if kwargs.get("img") is not None:
@@ -354,7 +354,7 @@ __global__ void resample{0}(float* outX, float* outY, const int x, const int y)
     """
     self.src = ""
     for i in range(self.fields_count):
-      self.src += s.format(i) # Adding textures for the quick fields resampling
+      self.src += s.format(i)  # Adding textures for the quick field resampling
 
     self.mod = SourceModule(self.src)
 
@@ -418,11 +418,11 @@ __global__ void resample{0}(float* outX, float* outY, const int x, const int y)
     self.debug(2, "updating original image")
     assert isinstance(img, np.ndarray), "Image must be a numpy array"
     assert len(img.shape) == 2, "Image must have 2 dimensions (got {})" \
-      .format(len(img.shape))
+                                .format(len(img.shape))
     assert img.shape == (self.h[0], self.w[0]), "Wrong size!"
     if img.dtype != np.float32:
-      warnings.warn("Correl() takes arrays with dtype np.float32 \
-to allow GPU computing (got {}). Converting to float32."
+      warnings.warn("Correl() takes arrays with dtype np.float32 "
+                    "to allow GPU computing (got {}). Converting to float32."
                     .format(img.dtype), RuntimeWarning)
       img = img.astype(np.float32)
 
@@ -434,32 +434,32 @@ to allow GPU computing (got {}). Converting to float32."
 
   def set_fields(self, fields):
     assert self.fields_count == len(fields), \
-      "Cannot change the number of fields on the go!"
+        "Cannot change the number of fields on the go!"
     # Choosing the right function to copy
     if isinstance(fields[0], str) or isinstance(fields[0][0], np.ndarray):
       toArray = cuda.matrix_to_array
     elif isinstance(fields[0][0], gpuarray.GPUArray):
       toArray = cuda.gpuarray_to_array
     else:
-      self.debug(0, "Error ! Incorrect fields argument. \
-See docstring of Correl")
+      self.debug(0, "Error ! Incorrect fields argument. "
+                    "See docstring of Correl")
       raise ValueError
     # These list store the arrays for the fields texture
     # (to be interpolated quickly for each stage)
     self.fieldsXArray = []
     self.fieldsYArray = []
-    for i,f in enumerate(fields):
-      if isinstance(f, tuple): # If tuple, check the shape
-        assert len(f) == 2,"fields n°{} is invalid".format(i+1)
-        assert f[0].shape == f[1].shape == (self.h[0],self.w[0]),\
-        "fields n°{} is invalid".format(i+1)
-      elif isinstance(f, str): # If string, convert to tuple
-        fields[i] = get_field(f.lower(), self.h[0],self.w[0])
+    for i, f in enumerate(fields):
+      if isinstance(f, tuple):  # If tuple, check the shape
+        assert len(f) == 2, "fields n°{} is invalid".format(i + 1)
+        assert f[0].shape == f[1].shape == (self.h[0], self.w[0]),\
+               "fields n°{} is invalid".format(i + 1)
+      elif isinstance(f, str):  # If string, convert to tuple
+        fields[i] = get_field(f.lower(), self.h[0], self.w[0])
       # If (y,x,2) ndarray, check shape and convert to tuple
       elif isinstance(f, np.ndarray):
-        assert fields[i].shape == (self.h[0],self.w[0],2),\
-            "fields n°{} is invalid".format(i+1)
-        fields[i] = (f[:,:,0],f[:,:,1])
+        assert fields[i].shape == (self.h[0], self.w[0], 2),\
+            "fields n°{} is invalid".format(i + 1)
+        fields[i] = (f[:, :, 0], f[:, :, 1])
 
       self.fieldsXArray.append(toArray(fields[i][0], "C"))
       self.texFx[i].set_array(self.fieldsXArray[i])
@@ -483,13 +483,13 @@ See docstring of Correl")
   def set_image(self, img_d):
     if img_d.dtype != np.float32:
       warnings.warn("Correl() takes arrays with dtype np.float32 "
-"to allow GPU computing (got {}). Converting to float32."
+                    "to allow GPU computing (got {}). Converting to float32."
                     .format(img_d.dtype), RuntimeWarning)
       img_d = img_d.astype(np.float32)
     self.correl[0].set_image(img_d)
     for i in range(1, self.levels):
-      self.correl[i].set_image(
-        self.correl[i - 1].resampleD(self.correl[i].h, self.correl[i].w))
+      self.correl[i].set_image(self.correl[i - 1].resampleD(
+          self.correl[i].h, self.correl[i].w))
 
   def set_mask(self, mask):
     for l in range(self.levels):
