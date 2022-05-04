@@ -22,8 +22,8 @@ texture<float, cudaTextureType2D, cudaReadModeElementType> texMask;
 // Note: the outputs are not normalized
 __global__ void gradient(float* gradX, float* gradY)
 {
-  const uint x = blockIdx.x*blockDim.x+threadIdx.x;
-  const uint y = blockIdx.y*blockDim.y+threadIdx.y;
+  const unsigned int x = blockIdx.x*blockDim.x+threadIdx.x;
+  const unsigned int y = blockIdx.y*blockDim.y+threadIdx.y;
   if(x < WIDTH && y < HEIGHT)
   {
     gradX[x+WIDTH*y] = (
@@ -86,7 +86,7 @@ __global__ void makeDiff(float *out, const float *param,
     float ox = .5f;
     float oy = .5f;
     // First, let's compute the offset we have by adding all the fields
-    for(uint i = 0; i < PARAMETERS; i++)
+    for(unsigned int i = 0; i < PARAMETERS; i++)
     {
       ox += param[i]*fieldsX[WIDTH*HEIGHT*i+id];
       oy += param[i]*fieldsY[WIDTH*HEIGHT*i+id];
@@ -105,12 +105,12 @@ __global__ void makeDiff(float *out, const float *param,
 // the research direction)
 __global__ void myDot(const float *M, float *v)
 {
-  uint id = threadIdx.x;
+  unsigned int id = threadIdx.x;
   __shared__ float sh_v[PARAMETERS];
   float val = 0;
   sh_v[id] = v[id];
   __syncthreads();
-  for(uint i = 0; i < PARAMETERS; i++)
+  for(unsigned int i = 0; i < PARAMETERS; i++)
   {
     val += M[id*PARAMETERS+i]*sh_v[i];
   }
